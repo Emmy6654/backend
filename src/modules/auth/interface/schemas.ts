@@ -13,10 +13,13 @@ const password = z
     message: 'Password must be at most 72 bytes long',
   });
 
-// Refresh tokens are JWTs/opaque tokens that are well under 512 characters;
-// bounding the length prevents oversized payloads from exhausting resources
-// or causing database string truncation errors.
-const refreshToken = z.string().min(1).max(512);
+// JWTs are compact but can grow with additional claims; 2048 characters is a
+// safe upper bound that still rejects oversized payloads.
+const token = z.string().max(2048);
+
+// Opaque tokens (refresh, email verification, password reset) are bounded to
+// the same safe upper limit to reject oversized payloads.
+const opaqueToken = z.string().min(1).max(2048);
 
 export const registerBodySchema = z.object({
   email,
@@ -32,30 +35,30 @@ export const loginBodySchema = z.object({
 });
 export const loginResponseSchema = z.object({
   data: z.object({
-    accessToken: z.string(),
-    refreshToken: z.string(),
+    accessToken: token,
+    refreshToken: token,
     user: z.object({
       id: z.string().uuid(),
       email: z.string(),
-      role: z.string(),
+      role,
       emailVerifiedAt: z.string().datetime().nullable(),
     }),
   }),
 });
 
 export const refreshBodySchema = z.object({
-  refreshToken,
+  refreshToken: opaqueToken,
 });
 export const refreshResponseSchema = z.object({
-  data: z.object({ accessToken: z.string(), refreshToken: z.string() }),
+  data: z.object({ accessToken: token, refreshToken: token }),
 });
 
 export const logoutBodySchema = z.object({
-  refreshToken,
+  refreshToken: opaqueToken,
 });
 
 export const verifyEmailBodySchema = z.object({
-  token: z.string().min(1),
+  token: opaqueToken,
 });
 
 export const requestPasswordResetBodySchema = z.object({
@@ -63,7 +66,7 @@ export const requestPasswordResetBodySchema = z.object({
 });
 
 export const resetPasswordBodySchema = z.object({
-  token: z.string().min(1),
+  token: opaqueToken,
   newPassword: password,
 });
 
