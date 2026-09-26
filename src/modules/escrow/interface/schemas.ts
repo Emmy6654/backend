@@ -22,7 +22,7 @@ const escrowDto = z.object({
   driverAddress: address,
   token: z.string(),
   amount: z.string(),
-  platformFee: z.string().nullable(),
+  platformFee: z.string().max(100).nullable(),
   status: escrowStatus,
   disputedBy: z.string().nullable(),
   disputedAt: z.string().datetime().nullable(),
